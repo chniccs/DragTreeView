@@ -241,6 +241,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
      * framework Animators.
      * Using framework animators has the side effect of clashing with ItemAnimator, creating
      * jumpy UIs.
+     * 复位的动画
      */
     List<RecoverAnimation> mRecoverAnimations = new ArrayList<RecoverAnimation>();
 
@@ -267,6 +268,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
 
     /**
      * Used for detecting fling swipe
+     * 用来监测速率
      */
     VelocityTracker mVelocityTracker;
 
@@ -331,6 +333,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
                 mActivePointerId = ACTIVE_POINTER_ID_NONE;
                 select(null, ACTION_STATE_IDLE);
             } else if (mActivePointerId != ACTIVE_POINTER_ID_NONE) {
+                //如果在不能没到的朝向上，距离变化大于阈值，就选中这个item
                 // in a non scroll orientation, if distance change is above threshold, we
                 // can select the item
                 final int index = event.findPointerIndex(mActivePointerId);
@@ -360,7 +363,9 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
             if (mActivePointerId == ACTIVE_POINTER_ID_NONE) {
                 return;
             }
+            //获得触摸事件
             final int action = MotionEventCompat.getActionMasked(event);
+            //获得触摸点的索引
             final int activePointerIndex = event.findPointerIndex(mActivePointerId);
             if (activePointerIndex >= 0) {
                 checkSelectForSwipe(action, event, activePointerIndex);
@@ -390,6 +395,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
                     select(null, ACTION_STATE_IDLE);
                     mActivePointerId = ACTIVE_POINTER_ID_NONE;
                     break;
+                //一个触摸手指离开屏幕，但有可能是多个触点，所以这并不等同于ACTION_UP
                 case MotionEvent.ACTION_POINTER_UP: {
                     final int pointerIndex = MotionEventCompat.getActionIndex(event);
                     final int pointerId = event.getPointerId(pointerIndex);
@@ -397,6 +403,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
                         // This was our active pointer going up. Choose a new
                         // active pointer and adjust accordingly.
                         final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+                        //更新触摸点
                         mActivePointerId = event.getPointerId(newPointerIndex);
                         updateDxDy(event, mSelectedFlags, pointerIndex);
                     }
@@ -470,7 +477,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
             setupCallbacks();
         }
     }
-
+    //为recyclerView绑定各种回调
     private void setupCallbacks() {
         ViewConfiguration vc = ViewConfiguration.get(mRecyclerView.getContext());
         mSlop = vc.getScaledTouchSlop();
@@ -479,7 +486,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         mRecyclerView.addOnChildAttachStateChangeListener(this);
         initGestureDetector();
     }
-
+    //为recyclerView消除各种回调
     private void destroyCallbacks() {
         mRecyclerView.removeItemDecoration(this);
         mRecyclerView.removeOnItemTouchListener(mOnItemTouchListener);
@@ -503,7 +510,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         mGestureDetector = new GestureDetectorCompat(mRecyclerView.getContext(),
                 new ItemTouchHelperGestureListener());
     }
-
+    //获得被选中的item的x、y值
     private void getSelectedDxDy(float[] outPosition) {
         if ((mSelectedFlags & (LEFT | RIGHT)) != 0) {
             outPosition[0] = mSelectedStartX + mDx - mSelected.itemView.getLeft();
@@ -661,6 +668,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         }
         final ViewParent rvParent = mRecyclerView.getParent();
         if (rvParent != null) {
+            //请求拦截或不拦截触摸事件
             rvParent.requestDisallowInterceptTouchEvent(mSelected != null);
         }
         if (!preventLayout) {
@@ -669,7 +677,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         mCallback.onSelectedChanged(mSelected, mActionState);
         mRecyclerView.invalidate();
     }
-
+    //分发水平滑动
     void postDispatchSwipe(final RecoverAnimation anim, final int swipeDir) {
         // wait until animations are complete.
         mRecyclerView.post(new Runnable() {
@@ -692,7 +700,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
             }
         });
     }
-
+    //判断是否有在执行的动画
     boolean hasRunningRecoverAnim() {
         final int size = mRecoverAnimations.size();
         for (int i = 0; i < size; i++) {
@@ -705,6 +713,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
 
     /**
      * If user drags the view to the edge, trigger a scroll if necessary.
+     * 需要滑动
      */
     boolean scrollIfNecessary() {
         if (mSelected == null) {
@@ -768,7 +777,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         mDragScrollStartTimeInMs = Long.MIN_VALUE;
         return false;
     }
-
+    //获取当前目标位置的item
     private List<ViewHolder> findSwapTargets(ViewHolder viewHolder) {
         if (mSwapTargets == null) {
             mSwapTargets = new ArrayList<ViewHolder>();
@@ -822,26 +831,31 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
      * Checks if we should swap w/ another view holder.
      */
     void moveIfNecessary(ViewHolder viewHolder) {
+        //判断是否正在layout中，如果是就返回
         if (mRecyclerView.isLayoutRequested()) {
             return;
         }
+        //如果不在拖动中就返回
         if (mActionState != ACTION_STATE_DRAG) {
             return;
         }
-
+        //移动的阈值，默认为0.5
         final float threshold = mCallback.getMoveThreshold(viewHolder);
         final int x = (int) (mSelectedStartX + mDx);
         final int y = (int) (mSelectedStartY + mDy);
+        //如果y、x轴上的移动距离都小于最小移动范围，就不往下执行，直接返回
         if (Math.abs(y - viewHolder.itemView.getTop()) < viewHolder.itemView.getHeight() * threshold
                 && Math.abs(x - viewHolder.itemView.getLeft())
                 < viewHolder.itemView.getWidth() * threshold) {
             return;
         }
+        //获取当前目标位置的item集合
         List<ViewHolder> swapTargets = findSwapTargets(viewHolder);
         if (swapTargets.size() == 0) {
             return;
         }
         // may swap.
+        //这一步是获得要往下移动的item的ViewHolder
         ViewHolder target = mCallback.chooseDropTarget(viewHolder, swapTargets, x, y);
         if (target == null) {
             mSwapTargets.clear();
@@ -852,6 +866,7 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
         final int fromPosition = viewHolder.getAdapterPosition();
         if (mCallback.onMove(mRecyclerView, viewHolder, target)) {
             // keep target visible
+            //执行移动操作
             mCallback.onMoved(mRecyclerView, viewHolder, fromPosition,
                     target, toPosition, x, y);
         }
@@ -869,6 +884,8 @@ public class DtvItemTouchHelper extends RecyclerView.ItemDecoration
             return;
         }
         if (mSelected != null && holder == mSelected) {
+            //TODO
+            //这里是清除掉拖动状态
             select(null, ACTION_STATE_IDLE);
         } else {
             endRecoverAnimation(holder, false); // this may push it into pending cleanup list.

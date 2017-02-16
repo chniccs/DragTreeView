@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "DragTreeView";
@@ -50,20 +49,20 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
                 //viewHolder拖动的item的holder
                 //target当前目标item的holder
-                int fromPosition = viewHolder.getAdapterPosition();
-                int targetPosition = target.getAdapterPosition();
-                if (fromPosition < targetPosition) {
-                    for (int i = fromPosition; i < targetPosition; i++) {
-                        Collections.swap(mData, i, i + 1);
-                    }
-                } else {
-                    for (int i = fromPosition; i > targetPosition; i--) {
-                        Collections.swap(mData, i, i - 1);
-                    }
-                }
+//                int fromPosition = viewHolder.getAdapterPosition();
+//                int targetPosition = target.getAdapterPosition();
+//                if (fromPosition < targetPosition) {
+//                    for (int i = fromPosition; i < targetPosition; i++) {
+//                        Collections.swap(mData, i, i + 1);
+//                    }
+//                } else {
+//                    for (int i = fromPosition; i > targetPosition; i--) {
+//                        Collections.swap(mData, i, i - 1);
+//                    }
+//                }
                 Log.d(TAG,"拖的："+viewHolder.itemView.getTop());
                 Log.d(TAG,"当前的："+target.itemView.getTop());
-                mAdapter.notifyItemMoved(fromPosition,targetPosition);
+//                mAdapter.notifyItemMoved(fromPosition,targetPosition);
                 return true;
             }
 
